@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="100%" height="100%" fill="#E9F5EC" />
+  <circle cx="100" cy="70" r="45" fill="#10B981" />
+  <rect x="40" y="120" width="120" height="50" rx="8" fill="#10B981" />
+  <text x="100" y="140" font-size="26" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif">RS</text>
+</svg>
