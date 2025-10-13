@@ -56,17 +56,33 @@ export async function POST(request) {
             ]
         })
 
-        const newStore=await prisma.store.create({
-            data:{
+        // Ensure a corresponding Prisma user exists. If the user row is missing
+        // creating the store will fail with a foreign key error (P2003).
+        const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!existingUser) {
+            // Create a minimal user record using available data. The schema requires
+            // id, name, email and image, so provide defaults where necessary.
+            await prisma.user.create({
+                data: {
+                    id: userId,
+                    email: email || "",
+                    name: "",
+                    image: "",
+                }
+            });
+        }
+
+        const newStore = await prisma.store.create({
+            data: {
                 userId,
                 name,
                 description,
-                username:username.toLowerCase(),
+                username: username.toLowerCase(),
                 address,
                 contact,
                 email,
-                logo:optimizedImage,
-        
+                logo: optimizedImage,
+
             }
         })
 
