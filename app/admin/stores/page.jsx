@@ -1,28 +1,53 @@
 'use client'
-import { storesDummyData } from "@/assets/assets"
 import StoreInfo from "@/components/admin/StoreInfo"
 import Loading from "@/components/Loading"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
+import { useUser,useAuth } from "@clerk/nextjs"
+import axios from "axios"
 
 export default function AdminStores() {
+
+    const {user}=useUser()
+    const { getToken }=useAuth()
 
     const [stores, setStores] = useState([])
     const [loading, setLoading] = useState(true)
 
     const fetchStores = async () => {
-        setStores(storesDummyData)
+        try{
+            const token=await getToken()
+            const {data}=await axios.get('/api/admin/stores',{
+                headers:{Authorization:`Bearer ${token}`}
+            })
+    
+            setStores(data.stores)
+        }
+        catch(error){
+            toast.error(error?.response?.data?.message || error.message)
+        }
         setLoading(false)
     }
 
     const toggleIsActive = async (storeId) => {
-        // Logic to toggle the status of a store
+        try{
+            const token=await getToken()
+            const {data}=await axios.post('/api/admin/toggle-store',{storeId},{
+                headers:{Authorization:`Bearer ${token}`}
+            })
+            await fetchStores()
+            toast.success(data.message)
+        }catch(error) {
+            toast.error(error?.response?.data?.message || error.message)
+        }
 
     }
 
     useEffect(() => {
+        if(user){
         fetchStores()
-    }, [])
+        }
+    }, [user])
 
     return !loading ? (
         <div className="text-slate-500 mb-28">
