@@ -17,6 +17,15 @@ export async function POST(request){
 
         await prisma.coupon.create({
             data:coupon
+        }).then(async (coupon)=>{
+            //run inngest scheduler function to delete coupon on expire
+            await inngest.send({
+                name:"app/coupon.expired",
+                data:{
+                    code:coupon.code,
+                    expires_at:coupon.expiresAt,
+                }
+            })
         })
         return NextResponse.json({message:"Coupon created successfully"})
 
