@@ -3,7 +3,7 @@
   <p>
     A multi-vendor e-commerce platform built with Next.js and Tailwind CSS, featuring Stripe payments, Cash on Delivery, and advanced admin analytics.
   </p>
-  <a href="https://your-live-demo-link.com" target="_blank">🔗 Live Project</a>
+  <a href="https://nexusmart-o8qn1taoq-gvb18s-projects.vercel.app/" target="_blank">🔗 Live Project</a>
 </div>
 
 ---
