@@ -1,60 +1,93 @@
 <div align="center">
-  <h1>NexusMart</h1>
+  <h1>NexusMart 🛒</h1>
   <p>
-    An open-source multi-vendor e-commerce platform built with Next.js and Tailwind CSS.
+    A multi-vendor e-commerce platform built with Next.js and Tailwind CSS, featuring Stripe payments, Cash on Delivery, and advanced admin analytics.
   </p>
-
+  <a href="https://your-live-demo-link.com" target="_blank">🔗 Live Project</a>
 </div>
 
 ---
 
 ## 📖 Table of Contents
 
-- [✨ Features](#-features)
+- [✨ Overview](#-overview)
 - [🛠️ Tech Stack](#-tech-stack)
-- [🚀 Getting Started](#-getting-started)
-
+- [💡 Core Features](#-core-features)
+- [🎨 Credits](#-credits)
+- [⚖️ License](#-license)
+- [📬 Contact](#-contact)
 
 ---
 
-## Features
+## ✨ Overview
 
-- **Multi-Vendor Architecture:** Allows multiple vendors to register, manage their own products, and sell on a single platform.
-- **Customer-Facing Storefront:** A beautiful and responsive user interface for customers to browse and purchase products.
-- **Vendor Dashboards:** Dedicated dashboards for vendors to manage products, view sales analytics, and track orders.
-- **Admin Panel:** A comprehensive dashboard for platform administrators to oversee vendors, products, and commissions.
+**NexusMart** is a modern multi-vendor e-commerce platform where multiple sellers can register, create stores, and sell products to customers.  
+It supports **Stripe payments**, **Cash on Delivery (COD)**, and features **an interactive admin dashboard** with analytics and coupon management.
 
-## 🛠️ Tech Stack <a name="-tech-stack"></a>
+---
 
-- **Framework:** Next.js
-- **Styling:** Tailwind CSS
-- **UI Components:** Lucide React for icons
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js (App Router)
+- **Frontend:** React.js + Tailwind CSS
+- **Authentication:** Clerk
+- **Database:** Neon (PostgreSQL) + Prisma ORM
+- **Payments:** Stripe Gateway + Cash on Delivery (COD)
 - **State Management:** Redux Toolkit
-
-## 🚀 Getting Started <a name="-getting-started"></a>
-
-First, install the dependencies. We recommend using `npm` for this project.
-
-```bash
-npm install
-```
-
-Then, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/(public)/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Outfit](https://vercel.com/font), a new font family for Vercel.
+- **Charts & Analytics:** Recharts
+- **Image Optimization:** ImageKit.io
+- **Serverless Jobs:** Inngest
+- **Icons:** Lucide React
 
 ---
+
+## 💡 Core Features
+
+### 🏪 Multi-Vendor Marketplace
+- Vendors can register and launch their own stores.
+- Each store has its own dashboard for managing products and tracking performance.
+
+### 👨‍💼 Seller Dashboard
+- Add, edit, or remove products.
+- Toggle product availability when out of stock.
+- View detailed order information and fulfillment status.
+- Track **daily orders and earnings** with Recharts-based analytics.
+
+### ⚙️ Admin Dashboard
+- Approve or reject new store requests.
+- Toggle store visibility on the platform.
+- Create and manage **discount coupons**.
+- Monitor **orders, revenue, and vendor performance** using charts.
+
+### 💳 Payment System
+- Secure payments through **Stripe**.
+- Option for **Cash on Delivery (COD)**.
+- **Plus Membership** system with premium access and automatic billing.
+
+### 🧑‍🤝‍🧑 User Roles
+- **Normal Members:** Can browse and purchase products.
+- **Plus Members:** Access exclusive deals and faster checkout.
+
+### ⭐ Ratings & Reviews
+- Customers can leave product ratings to enhance trust and visibility.
+
+---
+
+## 🎨 Credits
+
+- **UI Design:** The front-end layout and design are inspired by *GreatStack*’s work.
+
+---
+
+## ⚖️ License
+
+**All Rights Reserved © 2025 [GVBharadwaj18]**
+
+This project and its source code are proprietary.  
+You may not copy, modify, or redistribute any part of this software without explicit written permission from the author.
+
+> See [Credits](#-credits) for attribution details.
+
+---
+
+
