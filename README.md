@@ -15,7 +15,7 @@
 - [💡 Core Features](#-core-features)
 - [🎨 Credits](#-credits)
 - [⚖️ License](#-license)
-- [📬 Contact](#-contact)
+
 
 ---
 
