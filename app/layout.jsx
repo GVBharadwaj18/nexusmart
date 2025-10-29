@@ -13,7 +13,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <ClerkProvider>
+        <ClerkProvider signInFallbackRedirectUrl="/"
+        signUpFallbackRedirectUrl="/">
         <html lang="en">
             <body className={`${outfit.className} antialiased`}>
                 <StoreProvider>

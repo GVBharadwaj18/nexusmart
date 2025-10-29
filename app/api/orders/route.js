@@ -1,7 +1,8 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-
+import { PaymentMethod } from "@prisma/client";
+import Stripe from "stripe";
 
 
 export async function POST(request) {
@@ -92,6 +93,34 @@ export async function POST(request) {
             orderids.push(order.id);
                     
         }
+        if(paymentMethod==='STRIPE'){
+            const stripe=new Stripe(process.env.STRIPE_SECRET_KEY)
+            const origin=await request.headers.get('origin')
+
+            const session=await stripe.checkout.sessions.create({
+                payment_method_types:['card'],
+                line_items:[{
+                    price_data:{
+                        currency:'aud',
+                        product_data:{
+                            name:'Order'
+                        },
+                        unit_amount:Math.round(fullAmount*100),
+                    },
+                    quantity:1,
+                }],
+                expires_at:Math.floor(Date.now()/1000)+30*60, //current plus 30 min
+                mode:'payment',
+                success_url:`${origin}/loading?nextUrl=orders`,
+                cancel_url:`${origin}/cart`,
+                metadata:{
+                    orderIds:orderids.join(','),
+                    userId,
+                    appId:'nexusmart',
+                }
+            })
+            return NextResponse.json({session});
+        }
         //clear cart
         await prisma.user.update({
             where:{id:userId},
@@ -113,9 +142,9 @@ export async function GET(request){
         const {userId}=getAuth(request);
         const orders=await prisma.order.findMany({
             where:{userId, OR:[
-                {paymentMethod:paymentMethod.COD},
+                {paymentMethod: PaymentMethod.COD},
                 {AND:[
-                    {paymentMethod:paymentMethod.STRIPE},
+                    {paymentMethod:PaymentMethod.STRIPE},
                     {isPaid:true}
                 ]}
 
