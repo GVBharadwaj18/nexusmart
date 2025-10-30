@@ -54,11 +54,11 @@ export async function POST(request) {
         
         switch(event.type){
             case 'payment_intent.succeeded':{
-                await handlePaymentIntent(event.data.object,true)
+                await handlePaymentIntent(event.data.object.id,true)
                 break;
             }
             case 'payment_intent.canceled':{
-                await handlePaymentIntent(event.data.object,false)
+                await handlePaymentIntent(event.data.object.id,false)
                 break;
             }
             default:
