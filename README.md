@@ -1,7 +1,7 @@
 <div align="center">
   <h1>NexusMart 🛒</h1>
   <p>
-    A multi-vendor e-commerce platform built with Next.js and Tailwind CSS, featuring Stripe payments, Cash on Delivery, and advanced admin analytics.
+    A multi-vendor e-commerce platform built with Next.js and Tailwind CSS, featuring Stripe payments, AI-powered product insights, Cash on Delivery, and advanced admin analytics.
   </p>
   <a href="https://nexusmart-o8qn1taoq-gvb18s-projects.vercel.app/" target="_blank">🔗 Live Project</a>
 </div>
@@ -13,6 +13,7 @@
 - [✨ Overview](#-overview)
 - [🛠️ Tech Stack](#-tech-stack)
 - [💡 Core Features](#-core-features)
+- [🧠 AI Integration](#-ai-integration)
 - [🎨 Credits](#-credits)
 - [⚖️ License](#-license)
 
@@ -38,6 +39,7 @@ It supports **Stripe payments**, **Cash on Delivery (COD)**, and features **an i
 - **Image Optimization:** ImageKit.io
 - **Serverless Jobs:** Inngest
 - **Icons:** Lucide React
+- **AI Integration:** Gemini API (for image-to-product name & description)
 
 ---
 
@@ -73,9 +75,18 @@ It supports **Stripe payments**, **Cash on Delivery (COD)**, and features **an i
 
 ---
 
+### 🧠 AI Integration
+
+- **Gemini-Powered Product Auto-Fill:** NexusMart includes Gemini API integration to make product uploads smarter and faster for sellers.
+- When a seller uploads a product image, Gemini AI analyzes it and automatically suggests Product name & Marketing-friendly Description.
+- Reduces manual input and ensures professional, descriptive listings.
+- Runs securely on the server via authenticated API requests.
+
+
 ## 🎨 Credits
 
 - **UI Design:** The front-end layout and design are inspired by *GreatStack*’s work.
+- **AI Integration:** Built using Google’s Gemini API for image-to-text analysis.
 
 ---
 
