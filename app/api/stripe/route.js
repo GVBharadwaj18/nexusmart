@@ -89,9 +89,3 @@ export async function POST(request) {
         return NextResponse.json({error:error.code || error.message}, {status:400})
     }
 }
-
-export const config={
-    api:{
-        bodyParser:false,
-    }
-}
