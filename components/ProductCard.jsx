@@ -9,7 +9,9 @@ const ProductCard = ({ product }) => {
     const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$'
 
     // calculate the average rating of the product
-    const rating = Math.round(product.rating.reduce((acc, curr) => acc + curr.rating, 0) / product.rating.length);
+    const rating = product?.rating?.length
+        ? Math.round(product.rating.reduce((acc, curr) => acc + curr.rating, 0) / product.rating.length)
+        : 0;
 
     return (
         <Link href={`/product/${product.id}`} className=' group max-xl:mx-auto'>

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import authSeller from "@/middlewares/authSeller";
 import imagekit from "@/configs/imagekit";
+import { getEmbedding } from "@/lib/embeddings";
 //Add new Product
 export async function POST(request) {
     try{
@@ -45,7 +46,7 @@ export async function POST(request) {
             return url;
         }));
         //create new product
-        await prisma.product.create({
+        const newProduct = await prisma.product.create({
             data:{
                 name,
                 description,
@@ -57,7 +58,23 @@ export async function POST(request) {
                 stock,
                 inStock: stock > 0
             }
-        })
+        });
+
+        // Generate vector embedding for semantic search
+        try {
+            const vector = await getEmbedding(`${name} ${description} ${category}`);
+            if (vector && vector.length > 0) {
+                const vectorStr = `[${vector.join(",")}]`;
+                await prisma.$executeRaw`
+                    UPDATE "Product"
+                    SET embedding = ${vectorStr}::vector
+                    WHERE id = ${newProduct.id};
+                `;
+            }
+        } catch (embErr) {
+            console.error("Failed to generate embedding for new product:", embErr);
+        }
+
         return NextResponse.json({message:'Product added successfully'});
 
     }catch(error){
