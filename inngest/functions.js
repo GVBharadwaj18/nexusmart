@@ -66,6 +66,9 @@ export const releaseInventoryReservationOnExpiry = inngest.createFunction(
     { event: 'app/order.reservation.created' },
     async ({ event, step }) => {
         const { data } = event;
+        if (!data?.orderIds || !Array.isArray(data.orderIds) || data.orderIds.length === 0 || !data?.expiresAt) {
+            return { message: "No active reservation to expire" };
+        }
         const expiryDate = new Date(data.expiresAt);
 
         // Step 1: Wait until the reservation expires

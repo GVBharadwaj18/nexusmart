@@ -126,14 +126,18 @@ export async function POST(request) {
 
         if(paymentMethod==='STRIPE'){
             // Schedule Inngest durable reservation release timer (31 min, aligned with Stripe's 30-min checkout expiry)
-            const reservationExpiresAt = new Date(Date.now() + 31 * 60 * 1000).toISOString();
-            await inngest.send({
-                name: "app/order.reservation.created",
-                data: {
-                    orderIds: orderids,
-                    expiresAt: reservationExpiresAt,
-                }
-            });
+            try {
+                const reservationExpiresAt = new Date(Date.now() + 31 * 60 * 1000).toISOString();
+                await inngest.send({
+                    name: "app/order.reservation.created",
+                    data: {
+                        orderIds: orderids,
+                        expiresAt: reservationExpiresAt,
+                    }
+                });
+            } catch (inngestError) {
+                console.error("Inngest reservation event error:", inngestError);
+            }
 
             const stripe=new Stripe(process.env.STRIPE_SECRET_KEY)
             const origin=await request.headers.get('origin')
