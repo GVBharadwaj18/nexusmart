@@ -24,6 +24,7 @@ const OrderSummary = ({ totalPrice, items }) => {
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [couponCodeInput, setCouponCodeInput] = useState('');
     const [coupon, setCoupon] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleCouponCode = async (event) => {
         event.preventDefault();
@@ -43,6 +44,8 @@ const OrderSummary = ({ totalPrice, items }) => {
 
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
         try{
             if(!user){
                 return toast('Please login to place order')
@@ -50,7 +53,13 @@ const OrderSummary = ({ totalPrice, items }) => {
             if(!selectedAddress){
                 return toast.error('Please select an address')
             }
+            setIsSubmitting(true);
             const token=await getToken()
+
+            // Financial-Grade Idempotency: Generate a unique UUID for this checkout attempt
+            const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
 
             const orderData={
                 addressId:selectedAddress.id,
@@ -60,9 +69,14 @@ const OrderSummary = ({ totalPrice, items }) => {
             if(coupon){
                 orderData.couponCode=coupon.code
             }
-            //create order
-            const {data}=await axios.post('/api/orders',orderData,{headers:{Authorization:`Bearer ${token}`}})
-           
+
+            // Create order with Idempotency-Key header to prevent duplicate charges or orders
+            const {data}=await axios.post('/api/orders', orderData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Idempotency-Key': idempotencyKey,
+                }
+            });
 
             if(paymentMethod==='STRIPE'){
                 window.location.href=data.session.url;
@@ -72,12 +86,10 @@ const OrderSummary = ({ totalPrice, items }) => {
                  dispatch(fetchCart({token}))
             }
 
-
         }catch(error){
-            return toast.error(error?.response?.data?.message || error.message)
+            setIsSubmitting(false);
+            return toast.error(error?.response?.data?.error || error?.response?.data?.message || error.message)
         }
-
-        
     }
 
     return (
@@ -157,7 +169,15 @@ const OrderSummary = ({ totalPrice, items }) => {
                     
                 </p>
             </div>
-            <button onClick={e => toast.promise(handlePlaceOrder(e), { loading: 'placing Order...' })} className='w-full bg-slate-700 text-white py-2.5 rounded hover:bg-slate-900 active:scale-95 transition-all'>Place Order</button>
+            <button 
+                disabled={isSubmitting} 
+                onClick={e => toast.promise(handlePlaceOrder(e), { loading: 'Placing Order...' })} 
+                className={`w-full py-2.5 rounded transition-all active:scale-95 text-white ${
+                    isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-900'
+                }`}
+            >
+                {isSubmitting ? 'Processing Order...' : 'Place Order'}
+            </button>
 
             {showAddressModal && <AddressModal setShowAddressModal={setShowAddressModal} />}
 

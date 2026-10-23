@@ -7,11 +7,52 @@ import { inngest } from "@/inngest/client";
 
 
 export async function POST(request) {
+    let idempotencyKey = null;
     try{
         const {userId,has}=getAuth(request);
         if(!userId){
             return NextResponse.json({error:'Unauthorized'},{status:401});
         }
+
+        // Idempotency: Deduplicate concurrent or retried checkout requests
+        idempotencyKey = request.headers.get('idempotency-key') || request.headers.get('x-idempotency-key');
+
+        if (idempotencyKey) {
+            const cachedRecord = await prisma.idempotencyKey.findUnique({
+                where: { id: idempotencyKey }
+            });
+
+            if (cachedRecord) {
+                // If checkout was already completed, return the cached result without re-billing or re-decrementing stock
+                if (cachedRecord.status === 'COMPLETED' && cachedRecord.response) {
+                    return NextResponse.json(cachedRecord.response, {
+                        status: cachedRecord.statusCode || 200,
+                        headers: { 'X-Idempotency-Cache': 'HIT' }
+                    });
+                }
+                // If in progress, block concurrent double-click to prevent race conditions
+                if (cachedRecord.status === 'IN_PROGRESS') {
+                    return NextResponse.json(
+                        { error: 'A checkout request with this idempotency key is already in progress. Please wait.' },
+                        { status: 409 }
+                    );
+                }
+            }
+
+            // Register key as IN_PROGRESS with a 24-hour expiration window
+            await prisma.idempotencyKey.upsert({
+                where: { id: idempotencyKey },
+                update: { status: 'IN_PROGRESS' },
+                create: {
+                    id: idempotencyKey,
+                    userId,
+                    action: 'CREATE_ORDER',
+                    status: 'IN_PROGRESS',
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+                }
+            });
+        }
+
         const {addressId,items,couponCode,paymentMethod}=await request.json();
 
 
@@ -164,17 +205,51 @@ export async function POST(request) {
                     appId:'nexusmart',
                 }
             })
-            return NextResponse.json({session});
+
+            const responseData = { session };
+            // Cache successful idempotency response
+            if (idempotencyKey) {
+                await prisma.idempotencyKey.update({
+                    where: { id: idempotencyKey },
+                    data: {
+                        status: 'COMPLETED',
+                        statusCode: 200,
+                        response: responseData
+                    }
+                }).catch(() => {});
+            }
+
+            return NextResponse.json(responseData);
         }
         //clear cart
         await prisma.user.update({
             where:{id:userId},
             data:{cart:{}}
         });
-        return NextResponse.json({message:'Order placed successfully'});
+
+        const responseData = { message: 'Order placed successfully' };
+        // Cache successful idempotency response for COD
+        if (idempotencyKey) {
+            await prisma.idempotencyKey.update({
+                where: { id: idempotencyKey },
+                data: {
+                    status: 'COMPLETED',
+                    statusCode: 200,
+                    response: responseData
+                }
+            }).catch(() => {});
+        }
+
+        return NextResponse.json(responseData);
 
     }catch(error){
         console.error(error);
+        if (idempotencyKey) {
+            // Clean up idempotency key on failure so user can retry safely
+            await prisma.idempotencyKey.delete({
+                where: { id: idempotencyKey }
+            }).catch(() => {});
+        }
         return NextResponse.json({error:error.code || error.message},{status:400});
     }
 }

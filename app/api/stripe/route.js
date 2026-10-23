@@ -15,6 +15,27 @@ export async function POST(request) {
             process.env.STRIPE_WEBHOOK_SECRET
         )
 
+        // Webhook Idempotency: Deduplicate by Stripe's unique event.id
+        const existingEvent = await prisma.idempotencyKey.findUnique({
+            where: { id: event.id }
+        });
+        if (existingEvent) {
+            console.log(`Duplicate Stripe webhook event skipped: ${event.id}`);
+            return NextResponse.json({ received: true, note: 'Duplicate webhook skipped' });
+        }
+
+        // Record webhook event as processed with 7-day retention
+        await prisma.idempotencyKey.create({
+            data: {
+                id: event.id,
+                userId: 'stripe_webhook',
+                action: event.type,
+                status: 'COMPLETED',
+                statusCode: 200,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            }
+        }).catch(() => {});
+
         const handlePaymentIntent=async(paymentIntentId,isPaid)=>{
             const session=await stripe.checkout.sessions.list({
                 payment_intent:paymentIntentId,

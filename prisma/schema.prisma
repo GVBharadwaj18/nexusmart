@@ -162,3 +162,18 @@ model Store {
     Order   Order[]
     user    User      @relation(fields: [userId], references: [id])
 }
+
+// Financial-Grade Idempotency Key Tracking for Checkout & Webhooks
+model IdempotencyKey {
+    id         String   @id // Client UUID or Stripe event.id
+    userId     String
+    action     String   // e.g. "CREATE_ORDER", "STRIPE_WEBHOOK"
+    status     String   @default("IN_PROGRESS") // "IN_PROGRESS" | "COMPLETED" | "FAILED"
+    statusCode Int      @default(200)
+    response   Json?    // Cached response payload returned on duplicate requests
+    createdAt  DateTime @default(now())
+    expiresAt  DateTime // TTL expiration for record cleanup
+
+    @@index([userId])
+    @@index([expiresAt])
+}
