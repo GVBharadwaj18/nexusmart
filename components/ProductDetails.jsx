@@ -56,7 +56,21 @@ const ProductDetails = ({ product }) => {
                     <TagIcon size={14} />
                     <p>Save {((product.mrp - product.price) / product.mrp * 100).toFixed(0)}% right now</p>
                 </div>
-                <div className="flex items-end gap-5 mt-10">
+
+                {/* Stock Availability Badge */}
+                <div className="mt-4">
+                    {product.inStock && (product.stock ?? 1) > 0 ? (
+                        <p className={`text-sm font-medium ${product.stock <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {product.stock <= 5 
+                                ? `🔥 Hurry, only ${product.stock} left in stock!` 
+                                : `✓ In Stock (${product.stock} units available)`}
+                        </p>
+                    ) : (
+                        <p className="text-sm font-medium text-rose-600">✕ Currently Out of Stock</p>
+                    )}
+                </div>
+
+                <div className="flex items-end gap-5 mt-6">
                     {
                         cart[productId] && (
                             <div className="flex flex-col gap-3">
@@ -65,8 +79,17 @@ const ProductDetails = ({ product }) => {
                             </div>
                         )
                     }
-                    <button onClick={() => !cart[productId] ? addToCartHandler() : router.push('/cart')} className="bg-slate-800 text-white px-10 py-3 text-sm font-medium rounded hover:bg-slate-900 active:scale-95 transition">
-                        {!cart[productId] ? 'Add to Cart' : 'View Cart'}
+                    <button 
+                        disabled={!product.inStock || product.stock <= 0}
+                        onClick={() => !cart[productId] ? addToCartHandler() : router.push('/cart')} 
+                        className={`px-10 py-3 text-sm font-medium rounded transition active:scale-95 ${
+                            !product.inStock || product.stock <= 0
+                                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                : 'bg-slate-800 text-white hover:bg-slate-900'
+                        }`}>
+                        {!product.inStock || product.stock <= 0 
+                            ? 'Out of Stock' 
+                            : !cart[productId] ? 'Add to Cart' : 'View Cart'}
                     </button>
                 </div>
                 <hr className="border-gray-300 my-5" />

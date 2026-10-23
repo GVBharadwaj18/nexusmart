@@ -41,6 +41,24 @@ export async function POST(request) {
             })
 
         }else{
+            // Restore reserved inventory for canceled/failed orders
+            const orders = await prisma.order.findMany({
+                where: { id: { in: orderIdsArray } },
+                include: { orderItems: true }
+            });
+
+            for (const order of orders) {
+                for (const item of order.orderItems) {
+                    await prisma.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: { increment: item.quantity },
+                            inStock: true
+                        }
+                    });
+                }
+            }
+
             //delete orders
             await Promise.all(orderIdsArray.map(async(orderId)=>{
                 await prisma.order.delete({

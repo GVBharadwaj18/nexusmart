@@ -19,6 +19,7 @@ export async function POST(request) {
         const mrp=Number(formData.get('mrp'));
         const price=Number(formData.get('price'));
         const category=formData.get('category');
+        const stock=formData.get('stock') ? Number(formData.get('stock')) : 10;
         const images=formData.getAll('images');
 
         if(!name || !description || !mrp || !price || !category || images.length<1){
@@ -52,7 +53,9 @@ export async function POST(request) {
                 price,
                 category,
                 images:imagesUrl,
-                storeId
+                storeId,
+                stock,
+                inStock: stock > 0
             }
         })
         return NextResponse.json({message:'Product added successfully'});

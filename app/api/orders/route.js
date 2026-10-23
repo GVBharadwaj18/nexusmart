@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { PaymentMethod } from "@prisma/client";
 import Stripe from "stripe";
+import { inngest } from "@/inngest/client";
 
 
 export async function POST(request) {
@@ -45,55 +46,95 @@ export async function POST(request) {
             }
         }
 
-        // group orders by storeid using map
-        const ordersByStore=new Map()
-        for(const item of items){
-            const product=await prisma.product.findUnique({where:{id:item.id}})
-            const storeId=product.storeId
-            if(!ordersByStore.has(storeId)){
-                ordersByStore.set(storeId,[])
-            }
-            ordersByStore.get(storeId).push({...item,price:product.price})
-        }
+        // Concurrency Control: Atomic stock check, decrement, and multi-vendor order generation inside Prisma transaction
+        const { orderids, fullAmount } = await prisma.$transaction(async (tx) => {
+            const ordersByStore = new Map();
 
-        let orderids=[];
-        let fullAmount=0;
-        let isShippingFeeAdded=false;
+            for (const item of items) {
+                const product = await tx.product.findUnique({ where: { id: item.id } });
+                if (!product) {
+                    throw new Error(`Product not found with id: ${item.id}`);
+                }
+                if (!product.inStock || product.stock < item.quantity) {
+                    throw new Error(
+                        `Insufficient stock for "${product.name}". Only ${product.stock} left in stock.`
+                    );
+                }
 
-        //create orders for each seller
-        for(const [storeId,sellerItems] of ordersByStore.entries()){
-            let total=sellerItems.reduce((acc,item)=>acc+item.price*item.quantity,0)
-
-            if(couponCode){
-                total-=(total*coupon.discount)/100;
-            }
-            if(!isPlusMember && !isShippingFeeAdded){
-                total+=1;
-                isShippingFeeAdded=true;
-            }
-            fullAmount+=parseFloat(total.toFixed(2));
-            const order=await prisma.order.create({
-                data:{
-                    userId,
-                    storeId,
-                    addressId,
-                    total:parseFloat(total.toFixed(2)),
-                    paymentMethod,
-                    isCouponUsed:coupon?true:false,
-                    coupon:coupon?coupon:{},
-                    orderItems:{
-                        create:sellerItems.map(item=>({
-                            productId:item.id,
-                            quantity:item.quantity,
-                            price:item.price,
-                        }))
+                // Concurrency control: Atomic decrement
+                const updatedProduct = await tx.product.update({
+                    where: { id: item.id },
+                    data: {
+                        stock: { decrement: item.quantity },
                     }
+                });
+
+                // Auto-toggle inStock to false if remaining stock is 0
+                if (updatedProduct.stock <= 0) {
+                    await tx.product.update({
+                        where: { id: item.id },
+                        data: { inStock: false }
+                    });
+                }
+
+                const storeId = product.storeId;
+                if (!ordersByStore.has(storeId)) {
+                    ordersByStore.set(storeId, []);
+                }
+                ordersByStore.get(storeId).push({ ...item, price: product.price });
+            }
+
+            let createdOrderIds = [];
+            let totalAmount = 0;
+            let isShippingFeeAdded = false;
+
+            // Create orders for each seller
+            for (const [storeId, sellerItems] of ordersByStore.entries()) {
+                let total = sellerItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+                if (couponCode && coupon) {
+                    total -= (total * coupon.discount) / 100;
+                }
+                if (!isPlusMember && !isShippingFeeAdded) {
+                    total += 1;
+                    isShippingFeeAdded = true;
+                }
+                totalAmount += parseFloat(total.toFixed(2));
+                const order = await tx.order.create({
+                    data: {
+                        userId,
+                        storeId,
+                        addressId,
+                        total: parseFloat(total.toFixed(2)),
+                        paymentMethod,
+                        isCouponUsed: !!coupon,
+                        coupon: coupon ? coupon : {},
+                        orderItems: {
+                            create: sellerItems.map((item) => ({
+                                productId: item.id,
+                                quantity: item.quantity,
+                                price: item.price,
+                            }))
+                        }
+                    }
+                });
+                createdOrderIds.push(order.id);
+            }
+
+            return { orderids: createdOrderIds, fullAmount: totalAmount };
+        });
+
+        if(paymentMethod==='STRIPE'){
+            // Schedule Inngest durable reservation release timer (31 min, aligned with Stripe's 30-min checkout expiry)
+            const reservationExpiresAt = new Date(Date.now() + 31 * 60 * 1000).toISOString();
+            await inngest.send({
+                name: "app/order.reservation.created",
+                data: {
+                    orderIds: orderids,
+                    expiresAt: reservationExpiresAt,
                 }
             });
-            orderids.push(order.id);
-                    
-        }
-        if(paymentMethod==='STRIPE'){
+
             const stripe=new Stripe(process.env.STRIPE_SECRET_KEY)
             const origin=await request.headers.get('origin')
 
